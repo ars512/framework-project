@@ -1,28 +1,25 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
-	"github.com/gorilla/mux"
 	"shop/handlers"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	r := mux.NewRouter()
+	r := gin.Default()
 
-	r.HandleFunc("/products", handlers.GetProducts).Methods("GET")
-	r.HandleFunc("/products", handlers.CreateProduct).Methods("POST")
-	r.HandleFunc("/products/{id}", handlers.GetProduct).Methods("GET")
-	r.HandleFunc("/products/{id}", handlers.UpdateProduct).Methods("PUT")
-	r.HandleFunc("/products/{id}", handlers.DeleteProduct).Methods("DELETE")
+	r.GET("/products", handlers.GetProducts)
+	r.POST("/products", handlers.CreateProduct)
+	r.GET("/products/:id", handlers.GetProduct)
+	r.PUT("/products/:id", handlers.UpdateProduct)
+	r.DELETE("/products/:id", handlers.DeleteProduct)
 
-	r.HandleFunc("/brands", handlers.GetBrands).Methods("GET")
-	r.HandleFunc("/brands", handlers.CreateBrand).Methods("POST")
+	r.GET("/brands", handlers.GetBrands)
+	r.POST("/brands", handlers.CreateBrand)
 
-	r.HandleFunc("/categories", handlers.GetCategories).Methods("GET")
-	r.HandleFunc("/categories", handlers.CreateCategory).Methods("POST")
+	r.GET("/categories", handlers.GetCategories)
+	r.POST("/categories", handlers.CreateCategory)
 
-	log.Println("Server running on :8080")
-	http.ListenAndServe(":8080", r)
+	r.Run(":8080")
 }
