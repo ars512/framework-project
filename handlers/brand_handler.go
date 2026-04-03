@@ -2,35 +2,49 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
+	"shop/config"
 	"shop/models"
 
 	"github.com/gin-gonic/gin"
 )
 
-var brands []models.Brand
-var brandID = 1
+type brandRequest struct {
+	Name string `json:"name"`
+}
 
 func GetBrands(c *gin.Context) {
+	var brands []models.Brand
+
+	if err := config.DB.Order("id asc").Find(&brands).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load brands"})
+		return
+	}
+
 	c.JSON(http.StatusOK, brands)
 }
 
 func CreateBrand(c *gin.Context) {
-	var brand models.Brand
+	var req brandRequest
 
-	if err := c.ShouldBindJSON(&brand); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid json"})
 		return
 	}
 
-	if brand.Name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid data"})
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
 		return
 	}
 
-	brand.ID = brandID
-	brandID++
-	brands = append(brands, brand)
+	brand := models.Brand{Name: name}
+
+	if err := config.DB.Create(&brand).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create brand"})
+		return
+	}
 
 	c.JSON(http.StatusCreated, brand)
 }

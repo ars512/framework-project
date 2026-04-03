@@ -1,13 +1,23 @@
 package main
 
 import (
+	"shop/config"
 	"shop/handlers"
+	"shop/models"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	config.ConnectDB()
+
+	if err := config.DB.AutoMigrate(&models.Brand{}, &models.Category{}, &models.Product{}); err != nil {
+		panic(err)
+	}
+
 	r := gin.Default()
+
+	r.GET("/health", handlers.HealthCheck)
 
 	r.GET("/products", handlers.GetProducts)
 	r.POST("/products", handlers.CreateProduct)

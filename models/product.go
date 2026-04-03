@@ -1,13 +1,13 @@
 package models
 
 type Product struct {
-	ID          int      `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	BrandID     int      `json:"brand_id"`
-	CategoryID  int      `json:"category_id"`
-	Price       float64  `json:"price"`
-	Stock       int      `json:"stock"`
-	Sizes       []string `json:"sizes"`
-	Colors      []string `json:"colors"`
+	ID          uint     `json:"id" gorm:"primaryKey"`
+	Name        string   `json:"name" gorm:"not null"`
+	Description string   `json:"description" gorm:"not null"`
+	Price       float64  `json:"price" gorm:"not null"`
+	Stock       int      `json:"stock" gorm:"not null"`
+	BrandID     uint     `json:"brand_id" gorm:"not null"`
+	Brand       Brand    `json:"brand" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	CategoryID  uint     `json:"category_id" gorm:"not null"`
+	Category    Category `json:"category" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 }
