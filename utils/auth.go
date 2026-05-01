@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var jwtKey = []byte("your_secret_key") // В идеале брать из os.Getenv
+var jwtKey = []byte("your_secret_key")
 
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)

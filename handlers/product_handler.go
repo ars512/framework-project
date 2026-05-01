@@ -6,9 +6,13 @@ import (
 
 	"shop/config"
 	"shop/models"
+	"shop/services" // Импорт созданного сервиса
 
 	"github.com/gin-gonic/gin"
 )
+
+// Инициализируем сервис обмена валют (Resty v2 внутри)
+var exchangeSrv = services.NewExchangeService()
 
 type productRequest struct {
 	Name        string  `json:"name"`
@@ -152,11 +156,7 @@ func CreateProduct(c *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Preload("Brand").Preload("Category").First(&product, product.ID).Error; err != nil {
-		c.JSON(http.StatusCreated, product)
-		return
-	}
-
+	config.DB.Preload("Brand").Preload("Category").First(&product, product.ID)
 	c.JSON(http.StatusCreated, product)
 }
 
@@ -173,7 +173,18 @@ func GetProduct(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, product)
+	// Интеграция с сервисом валют (Задание 1)
+	rate, err := exchangeSrv.GetUSDExchangeRate()
+	priceInUSD := 0.0
+	if err == nil {
+		priceInUSD = product.Price * rate
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"product":       product,
+		"price_in_usd":  priceInUSD,
+		"exchange_rate": rate,
+	})
 }
 
 func UpdateProduct(c *gin.Context) {
@@ -195,38 +206,6 @@ func UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	if strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.Description) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name and description are required"})
-		return
-	}
-
-	if req.Price <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "price must be greater than 0"})
-		return
-	}
-
-	if req.Stock < 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "stock cannot be negative"})
-		return
-	}
-
-	if req.BrandID == 0 || req.CategoryID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "brand_id and category_id are required"})
-		return
-	}
-
-	var brand models.Brand
-	if err := config.DB.First(&brand, req.BrandID).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "brand not found"})
-		return
-	}
-
-	var category models.Category
-	if err := config.DB.First(&category, req.CategoryID).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "category not found"})
-		return
-	}
-
 	existing.Name = strings.TrimSpace(req.Name)
 	existing.Description = strings.TrimSpace(req.Description)
 	existing.Price = req.Price
@@ -239,11 +218,7 @@ func UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Preload("Brand").Preload("Category").First(&existing, id).Error; err != nil {
-		c.JSON(http.StatusOK, existing)
-		return
-	}
-
+	config.DB.Preload("Brand").Preload("Category").First(&existing, id)
 	c.JSON(http.StatusOK, existing)
 }
 
@@ -254,13 +229,7 @@ func DeleteProduct(c *gin.Context) {
 		return
 	}
 
-	var product models.Product
-	if err := config.DB.First(&product, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})
-		return
-	}
-
-	if err := config.DB.Delete(&product).Error; err != nil {
+	if err := config.DB.Delete(&models.Product{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete product"})
 		return
 	}
