@@ -14,8 +14,10 @@ import (
 var DB *gorm.DB
 
 func ConnectDB() {
+	// 1. Пытаемся взять строку подключения из переменной окружения (для Docker)
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
+		// Локальная строка подключения (если запускаешь без Docker)
 		dsn = "host=localhost user=postgres password=1234 dbname=shop port=5432 sslmode=disable TimeZone=Asia/Almaty"
 	}
 
@@ -25,7 +27,13 @@ func ConnectDB() {
 	}
 	DB = db
 
-	migrationURL := "postgres://postgres:1234@localhost:5432/shop?sslmode=disable"
+	// 2. Формируем URL для миграций.
+	// Библиотека migrate требует формат postgres://user:pass@host:port/db
+	migrationURL := os.Getenv("MIGRATION_URL")
+	if migrationURL == "" {
+		// Если запускаем локально
+		migrationURL = "postgres://postgres:1234@localhost:5432/shop?sslmode=disable"
+	}
 
 	runMigrations(migrationURL)
 }
